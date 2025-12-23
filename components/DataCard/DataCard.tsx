@@ -17,7 +17,7 @@ export function DataCard({ data, language, onCopy, onOpenWebview, onReset }: Dat
 
       // Financial
       financialStatus: "Moliyaviy holat",
-      balance: "Balans",
+      balance: "Balans", 
       hasLimit: "Limit mavjud",
       customDiscount: "Maxsus chegirma",
       overdueContracts: "Kechiktirilgan shartnoma",
@@ -119,11 +119,17 @@ export function DataCard({ data, language, onCopy, onOpenWebview, onReset }: Dat
   )
 
   const BooleanIndicator = ({ value, invertColor = false }: { value: boolean; invertColor?: boolean }) => {
-    const isNegative = invertColor ? !value : value
+    const showPositive = invertColor ? !value : value
     return (
       <div className="flex items-center gap-1.5">
-        {isNegative ? <XCircle className="h-4 w-4 text-red-500" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
-        <span className={`font-medium ${isNegative ? "text-red-600" : "text-green-600"}`}>{value ? t.yes : t.no}</span>
+        {showPositive ? (
+          <CheckCircle className="h-4 w-4 text-green-500" />
+        ) : (
+          <XCircle className="h-4 w-4 text-red-500" />
+        )}
+        <span className={`font-medium ${showPositive ? "text-green-600" : "text-red-600"}`}>
+          {value ? (language === "uz" ? "Ha" : "Да") : language === "uz" ? "Yo'q" : "Нет"}
+        </span>
       </div>
     )
   }
@@ -149,139 +155,182 @@ export function DataCard({ data, language, onCopy, onOpenWebview, onReset }: Dat
     </div>
   )
 
-  return (
-    <div className="w-full max-w-lg rounded-[20px] bg-card p-6 shadow-sm border border-border">
-      {/* HEADER SECTION */}
-      <div className="mb-6">
-        <SectionTitle>{language === "uz" ? "Asosiy ma'lumotlar" : "Основная информация"}</SectionTitle>
-
-        {/* Phone - Large and prominent */}
-        <div className="mb-4 text-center">
-          <span className="text-2xl font-bold text-primary">{formatPhone(data.phone)}</span>
-          {data.phone && <CopyButton text={data.phone} label={t.phone} />}
+  const BlacklistIndicator = ({ inBlacklist }: { inBlacklist: boolean }) => {
+    if (inBlacklist) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <CheckCircle className="h-4 w-4 text-red-500" />
+          <span className="font-medium text-red-600">{language === "uz" ? "Bor" : "Есть"}</span>
         </div>
-
-        <DataRow label={t.buyerId} copyValue={String(data.id)} copyLabel={t.buyerId}>
-          {data.id}
-        </DataRow>
-
-        <DataRow label={t.status}>
-          <span className="inline-flex items-center gap-2">
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-              {data.status}
-            </span>
-            <span>{data.status_label}</span>
-          </span>
-        </DataRow>
-
-        <DataRow label={t.verifiedAt}>
-          <span className={data.verified_at ? "text-green-600" : "text-amber-600"}>{formatDate(data.verified_at)}</span>
-        </DataRow>
+      )
+    }
+    return (
+      <div className="flex items-center gap-1.5">
+        <XCircle className="h-4 w-4 text-green-500" />
+        <span className="font-medium text-green-600">{language === "uz" ? "Yo'q" : "Нет"}</span>
       </div>
+    )
+  }
 
-      {/* FINANCIAL STATUS SECTION */}
-      <div className="mb-6">
-        <SectionTitle>{t.financialStatus}</SectionTitle>
+  return (
+    <div className="w-full rounded-[20px] bg-card p-6 md:p-8 shadow-sm border border-border">
+      <div
+        className="grid gap-6 md:gap-5 lg:gap-6"
+        style={{
+          gridTemplateColumns: "1fr",
+        }}
+      >
+        <style jsx>{`
+          @media (min-width: 768px) {
+            div[data-grid="main"] {
+              grid-template-columns: 58fr 42fr !important;
+            }
+          }
+        `}</style>
 
-        <DataRow label={t.balance} copyValue={formatBalance(data.balance)} copyLabel={t.balance}>
-          <span className="font-semibold text-primary">{formatBalance(data.balance)}</span>
-        </DataRow>
-
-        <DataRow label={t.hasLimit}>
-          <BooleanIndicator value={data.has_limit} />
-        </DataRow>
-
-        <DataRow label={t.customDiscount}>
-          {data.custom_discount !== null ? `${data.custom_discount}%` : t.notAvailable}
-        </DataRow>
-
-        <DataRow label={t.overdueContracts}>
-          <BooleanIndicator value={data.has_overdue_contracts} invertColor />
-        </DataRow>
-      </div>
-
-      {/* SECURITY / RISK SECTION */}
-      <div className="mb-6">
-        <SectionTitle>{t.securityRisk}</SectionTitle>
-
-        <DataRow label={t.blacklist}>
-          <BooleanIndicator value={data.is_blacklisted} invertColor />
-        </DataRow>
-
-        {data.is_blacklisted && data.blacklist_reason && (
-          <DataRow label={t.blacklistReason}>
-            <span className="text-red-600">{data.blacklist_reason}</span>
-          </DataRow>
-        )}
-
-        <DataRow label={t.statusExplanation}>
-          <span className="max-w-[200px] text-right">{data.status_explanation || "—"}</span>
-        </DataRow>
-      </div>
-
-      {/* AVAILABLE PERIODS SECTION */}
-      <div className="mb-6">
-        <SectionTitle>{t.availablePeriods}</SectionTitle>
-
-        {data.available_periods && data.available_periods.length > 0 ? (
-          <div className="space-y-3">
-            {data.available_periods.map((period) => (
-              <div key={period.id} className="rounded-xl bg-muted/50 px-4 py-3">
-                {/* Period Title */}
-                <div className="font-semibold text-foreground mb-2">
-                  {language === "uz" ? period.title_uz || period.name_uz : period.title_ru || period.name_ru}
-                </div>
-
-                {/* Markup percentages - always shown */}
-                <div className="grid grid-cols-2 gap-2 text-sm mb-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t.originalMarkup}:</span>
-                    <span className="font-medium">{period.original_markup ?? period.markup_percentage}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{t.discountMarkup}:</span>
-                    <span className="font-medium text-green-600">
-                      {period.discount_markup ?? period.markup_percentage}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Available balance - always shown even if 0.00 */}
-                <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                  <span className="text-sm text-muted-foreground">{t.availableBalance}:</span>
-                  <span className="font-semibold text-primary">{formatBalance(period.available_balance)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl bg-muted/50 px-4 py-3 text-center text-muted-foreground">{t.notAvailable}</div>
-        )}
-      </div>
-
-      {/* ACTION SECTION */}
-      <div className="flex flex-wrap gap-3 pt-2">
-        {data.webview_url ? (
-          <button
-            onClick={() => onOpenWebview(data.webview_url!)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-          >
-            <ExternalLink className="h-4 w-4" />
-            {t.openWebview}
-          </button>
-        ) : (
-          <div className="flex flex-1 items-center justify-center gap-2 rounded-full bg-muted px-5 py-3 text-sm font-semibold text-muted-foreground cursor-not-allowed">
-            <ExternalLink className="h-4 w-4" />
-            {t.openWebview} ({t.notAvailable})
-          </div>
-        )}
-        <button
-          onClick={onReset}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-muted px-5 py-3 text-sm font-semibold text-muted-foreground transition-all hover:bg-muted/80"
+        <div
+          data-grid="main"
+          className="grid gap-6 md:gap-5 lg:gap-6"
+          style={{
+            gridTemplateColumns: "1fr",
+          }}
         >
-          <RotateCcw className="h-4 w-4" />
-          {t.reset}
-        </button>
+          <div className="flex flex-col gap-6">
+            <div>
+              <SectionTitle>{language === "uz" ? "Asosiy ma'lumotlar" : "Основная информация"}</SectionTitle>
+
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-2xl font-bold text-primary whitespace-nowrap">{formatPhone(data.phone)}</span>
+                {data.phone && <CopyButton text={data.phone} label={t.phone} />}
+              </div>
+
+              <DataRow label={t.buyerId} copyValue={String(data.id)} copyLabel={t.buyerId}>
+                <span className="whitespace-nowrap">{data.id}</span>
+              </DataRow>
+
+              <DataRow label={t.status}>
+                <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {data.status}
+                  </span>
+                  <span>{data.status_label}</span>
+                </span>
+              </DataRow>
+
+              <DataRow label={t.verifiedAt}>
+                <span className={`whitespace-nowrap ${data.verified_at ? "text-green-600" : "text-amber-600"}`}>
+                  {formatDate(data.verified_at)}
+                </span>
+              </DataRow>
+            </div>
+
+            <div>
+              <SectionTitle>{t.financialStatus}</SectionTitle>
+
+              <DataRow label={t.balance} copyValue={formatBalance(data.balance)} copyLabel={t.balance}>
+                <span className="font-semibold text-primary whitespace-nowrap">{formatBalance(data.balance)}</span>
+              </DataRow>
+
+              <DataRow label={t.hasLimit}>
+                <BooleanIndicator value={data.has_limit} />
+              </DataRow>
+
+              <DataRow label={t.customDiscount}>
+                <span className="whitespace-nowrap">
+                  {data.custom_discount !== null ? `${data.custom_discount}%` : t.notAvailable}
+                </span>
+              </DataRow>
+
+              <DataRow label={t.overdueContracts}>
+                <BooleanIndicator value={data.has_overdue_contracts} invertColor />
+              </DataRow>
+            </div>
+
+            <div>
+              <SectionTitle>{t.securityRisk}</SectionTitle>
+
+              <DataRow label={t.blacklist}>
+                <BlacklistIndicator inBlacklist={data.is_in_black_list} />
+              </DataRow>
+
+              {data.is_in_black_list && data.blacklist_reason && (
+                <DataRow label={t.blacklistReason}>
+                  <span className="text-red-600">{data.blacklist_reason}</span>
+                </DataRow>
+              )}
+
+              <DataRow label={t.statusExplanation}>
+                <span className="max-w-[250px] text-right break-words">{data.status_explanation || "—"}</span>
+              </DataRow>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <div className="flex-1">
+              <SectionTitle>{t.availablePeriods}</SectionTitle>
+
+              {data.available_periods && data.available_periods.length > 0 ? (
+                <div className="flex flex-col gap-3">
+                  {data.available_periods.map((period, index) => (
+                    <div key={`period-${period.id ?? index}`} className="rounded-xl bg-muted/50 px-4 py-3">
+                      <div className="font-semibold text-foreground mb-2 text-left">
+                        {language === "uz" ? period.title_uz || period.name_uz : period.title_ru || period.name_ru}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">{t.originalMarkup}</span>
+                          <span className="font-medium">{period.original_markup ?? period.markup_percentage}%</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-muted-foreground text-xs">{t.discountMarkup}</span>
+                          <span className="font-medium text-green-600">
+                            {period.discount_markup ?? period.markup_percentage}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                        <span className="text-sm text-muted-foreground">{t.availableBalance}</span>
+                        <span className="font-semibold text-primary whitespace-nowrap">
+                          {formatBalance(period.available_balance)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-muted/50 px-4 py-3 text-center text-muted-foreground">
+                  {t.notAvailable}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 mt-auto">
+              {data.webview_url ? (
+                <button
+                  onClick={() => onOpenWebview(data.webview_url!)}
+                  className="w-full flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  {t.openWebview}
+                </button>
+              ) : (
+                <div className="w-full flex items-center justify-center gap-2 rounded-full bg-muted px-5 py-3 text-sm font-semibold text-muted-foreground cursor-not-allowed">
+                  <ExternalLink className="h-4 w-4" />
+                  {t.openWebview} ({t.notAvailable})
+                </div>
+              )}
+              <button
+                onClick={onReset}
+                className="w-full flex items-center justify-center gap-2 rounded-full bg-muted px-5 py-3 text-sm font-semibold text-muted-foreground transition-all hover:bg-muted/80"
+              >
+                <RotateCcw className="h-4 w-4" />
+                {t.reset}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

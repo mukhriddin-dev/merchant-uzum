@@ -137,7 +137,7 @@ export default function PanelPage() {
           />
         </div>
 
-        <div className="mt-8 w-full max-w-md">
+        <div className="mt-8 w-full max-w-[1150px]">
           {isLoading && <DataCardSkeleton />}
 
           {!isLoading && isError && (
