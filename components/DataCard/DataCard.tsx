@@ -20,7 +20,7 @@ export function DataCard({ data, language, onCopy, onOpenWebview, onReset }: Dat
       balance: "Balans", 
       hasLimit: "Limit mavjud",
       customDiscount: "Maxsus chegirma",
-      overdueContracts: "Kechiktirilgan shartnoma",
+      overdueContracts: "Qarzi mavjud",
 
       // Security
       securityRisk: "Xavfsizlik / Risk",
